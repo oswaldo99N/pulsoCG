@@ -458,3 +458,11 @@ body{grid-template-rows:auto minmax(0,1fr);height:100dvh}
 .network-link b,.network-link small{font-size:11px;color:var(--muted)}
 .network-actions{display:flex;gap:8px;flex-wrap:wrap}
 .network-actions a{text-decoration:none}
+
+#updatesButton.has-update{border-color:#30d158;color:#9aefb9;background:#163620}
+.update-body{padding:16px 20px 24px}
+.update-body p{margin:0 0 14px}
+.update-body progress{width:100%;height:16px;margin-bottom:16px}
+.update-actions{display:flex;flex-direction:column;gap:8px}
+
+@media(min-width:1051px) and (max-width:1380px){#updatesButton span{display:none}#updatesButton{padding:0 8px}}

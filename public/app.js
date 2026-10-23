@@ -1,3 +1,4 @@
+import { setupUpdateUI } from "/updates.js";
 import { assetUrl, volleyRally, volleyMatch, normalizeVolley, formatClock, parseClock, timerFields, timerValue } from "/sports.js";
 import { connectionLinks } from "/network.js";
 import { PROFILE_PRESETS } from "/presets.js";
@@ -1129,3 +1130,5 @@ const events = new EventSource("/events");
 events.addEventListener("open", () => { document.body.classList.add("connected"); $("#connectionText").textContent = "Conectado"; });
 events.addEventListener("state", event => renderState(JSON.parse(event.data)));
 events.onerror = () => { document.body.classList.remove("connected"); $("#connectionText").textContent = "Reconectando…"; };
+
+setupUpdateUI();

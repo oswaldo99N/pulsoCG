@@ -22,6 +22,7 @@
       <button class="obs-pill" id="obsStatus" type="button" title="¿Está OBS o vMix recibiendo los gráficos?"><i class="dot"></i><span>OBS…</span></button>
       <span class="onair-pill" id="activeCount">Nada en pantalla</span>
       <button class="ghost" id="obsButton" type="button" title="Enlaces para OBS o vMix en este equipo o en otra PC"><i data-lucide="link"></i>Conectar OBS</button>
+      <button class="ghost" id="updatesButton" type="button" title="Actualizaciones de Pulso CG" aria-label="Actualizaciones de Pulso CG" hidden><i data-lucide="download"></i><span>Actualizaciones</span></button>
       <button class="ghost" id="helpButton" type="button"><i data-lucide="circle-help"></i>Cómo se usa</button>
       <button class="ghost danger" id="hideAllButton" type="button"><i data-lucide="eye-off"></i>Ocultar todo</button>
     </div>
@@ -152,6 +153,16 @@
       <ol class="steps"><li>Add Input → <b>Web Browser</b>, misma URL, 1920 × 1080, y ponlo en un Overlay.</li></ol>
 
       <p class="muted small">Mantén Pulso CG abierto en el equipo emisor. Si la prueba no abre desde la otra PC, comprueba que no sea una red de invitados y permite conexiones entrantes a Pulso CG en el firewall (TCP 4173). No necesitas abrir puertos del router para usar la misma red local.</p>
+    </div>
+  </dialog>
+
+  <dialog class="modal help" id="updatesDialog" aria-labelledby="updatesTitle">
+    <form method="dialog" class="modal-head"><h2 id="updatesTitle">Actualizaciones de Pulso CG</h2><button class="icon-button" aria-label="Cerrar">×</button></form>
+    <div class="update-body"><p id="updateVersion"></p><p id="updateNextVersion"></p><p id="updateMessage" role="status"></p>
+      <progress id="updateProgress" max="100" value="0" hidden></progress>
+      <p class="muted small" id="updateManual" hidden>Esta instalación de Mac usa firma local. Recibirá avisos; la instalación automática estará disponible con la versión firmada con Developer ID.</p>
+      <p class="muted small">Puedes descargar mientras trabajas. Para instalar, guarda tus cambios y retira los gráficos del aire.</p>
+      <div class="update-actions"><button class="button go" type="button" id="updateAction" hidden>Descargar actualización</button><button class="button" type="button" id="updateCheck">Buscar actualizaciones</button><button class="button subtle" type="button" id="updateReleases">Ver versiones publicadas</button></div>
     </div>
   </dialog>
 

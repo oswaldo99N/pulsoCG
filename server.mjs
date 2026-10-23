@@ -13,6 +13,7 @@ import { PROFILE_PRESETS } from "./public/presets.js";
 import { runSimulation } from "./src/simulation.mjs";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
+const appVersion = JSON.parse(await readFile(path.join(root, "package.json"), "utf8")).version;
 const publicDir = path.join(root, "public");
 // Los datos viven en la carpeta estándar del sistema, no junto al programa:
 // así sobreviven si se mueve, actualiza o reinstala Pulso CG, y comparten la
@@ -458,7 +459,7 @@ function openBrowser(url) {
 // La app de escritorio importa este módulo y espera `ready`.
 let resolveReady, rejectReady;
 export const ready = new Promise((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
-export const info = { port, dataDir, url: `http://localhost:${port}`, version: "2.1.1" };
+export const info = { port, dataDir, url: `http://localhost:${port}`, version: appVersion };
 const embedded = Boolean(process.env.PULSO_EMBEDDED);
 
 server.on("error", error => {

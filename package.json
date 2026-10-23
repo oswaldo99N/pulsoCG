@@ -1,17 +1,18 @@
 {
   "name": "pulso-cg",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "description": "Grafismo broadcast para OBS y vMix: noticias y deportes.",
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --watch server.mjs",
-    "test": "node --test --test-isolation=none",
+    "test": "node --test",
     "app": "electron .",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
-    "stress": "node tools/stress.mjs"
+    "stress": "node tools/stress.mjs",
+    "build:release": "node tools/build-release.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -27,7 +28,7 @@
     "appId": "com.pulsocg.app",
     "productName": "Pulso CG",
     "directories": {
-      "output": "dist/2.1.1",
+      "output": "dist/2.2.0",
       "buildResources": "build"
     },
     "files": [
@@ -43,6 +44,13 @@
       "target": [
         {
           "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
           "arch": [
             "arm64",
             "x64"
@@ -80,6 +88,24 @@
     "linux": {
       "target": "AppImage",
       "category": "Video"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "oswaldo99N",
+        "repo": "pulsoCG",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oswaldo99N/pulsoCG.git"
+  },
+  "updates": {
+    "macSigned": false
   }
 }

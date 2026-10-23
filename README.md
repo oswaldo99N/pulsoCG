@@ -1,5 +1,10 @@
 # Pulso CG
 
+Repositorio: [oswaldo99N/pulsoCG](https://github.com/oswaldo99N/pulsoCG).
+
+Desde la versión 2.2.0: avisos y descargas de actualizaciones dentro de la app.
+Consulta [la guía de publicación y configuración de Apple](ACTUALIZACIONES.md).
+
 Sistema local de grafismo televisivo para OBS Studio y vMix. Incluye diez plantillas, seis capas simultáneas, preview, TAKE, actualización al aire, OUT, cola de emisión, persistencia local y salida web transparente.
 
 ## Cómo se usa (3 pasos)
@@ -287,3 +292,15 @@ Ambas computadoras comparten el partido del emisor. La dirección `localhost`
 solo corresponde al equipo que la abre. Si la prueba no carga desde el receptor,
 comprueba la red de invitados/aislamiento y permite Pulso CG en el firewall
 del emisor (TCP 4173). No hace falta redirigir puertos del router en la red local.
+
+## Actualizaciones automáticas
+
+El proyecto incluye dos flujos de GitHub Actions: comprobación del código y
+publicación de versiones. Las versiones se distribuyen mediante GitHub Releases.
+La app avisa, permite descargar y pide confirmación para reiniciar e instalar,
+comprobando antes que no haya gráficos al aire ni cambios pendientes.
+
+La primera versión con actualizador es **2.2.0**. Para activar la distribución
+firmada de Mac hay que configurar los secrets de Apple descritos en
+[ACTUALIZACIONES.md](ACTUALIZACIONES.md). Las versiones 2.1.1 y anteriores
+requieren instalar esa primera actualización de forma manual una vez.

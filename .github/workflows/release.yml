@@ -1,0 +1,113 @@
+name: Publicar actualización
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - id: version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'La versión debe ser estable: X.Y.Z.' >&2
+            exit 1
+          fi
+          if [[ "$GITHUB_REF_TYPE" == 'tag' && "$GITHUB_REF_NAME" != "v$VERSION" ]]; then
+            echo 'El tag debe coincidir con package.json.' >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+  build:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: mac
+          - os: windows-latest
+            name: windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Construir Mac firmado y notarizado
+        if: runner.os == 'macOS'
+        run: npm run build:release
+        env:
+          PULSO_MAC_REQUIRE_SIGNING: 'true'
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Construir Windows
+        if: runner.os == 'Windows'
+        run: npm run build:release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.name }}
+          if-no-files-found: error
+          path: |
+            dist/${{ needs.validate.outputs.version }}/*.dmg
+            dist/${{ needs.validate.outputs.version }}/*.zip
+            dist/${{ needs.validate.outputs.version }}/*.exe
+            dist/${{ needs.validate.outputs.version }}/*.blockmap
+            dist/${{ needs.validate.outputs.version }}/latest*.yml
+  publish:
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+      RELEASE_REPOSITORY: ${{ github.repository }}
+      RELEASE_COMMIT: ${{ github.sha }}
+      REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          merge-multiple: true
+          path: installers
+      - name: Publicar instaladores y metadatos juntos
+        shell: bash
+        run: |
+          if [[ "$REPOSITORY_PRIVATE" == 'true' ]]; then
+            echo 'Las actualizaciones sin token requieren un repositorio público de distribución.' >&2
+            exit 1
+          fi
+          TAG="v$RELEASE_VERSION"
+          if gh release view "$TAG" --repo "$RELEASE_REPOSITORY" >/dev/null 2>&1; then
+            IS_DRAFT=$(gh release view "$TAG" --repo "$RELEASE_REPOSITORY" --json isDraft --jq .isDraft)
+            if [[ "$IS_DRAFT" != 'true' ]]; then
+              echo 'Esta versión ya está publicada. Sube el número de versión.' >&2
+              exit 1
+            fi
+          else
+            gh release create "$TAG" --repo "$RELEASE_REPOSITORY" --target "$RELEASE_COMMIT" --draft --title "Pulso CG $RELEASE_VERSION" --notes 'Instaladores para Mac Apple Silicon, Mac Intel y Windows. La app avisa cuando hay una actualización nueva.'
+          fi
+          gh release upload "$TAG" installers/* --repo "$RELEASE_REPOSITORY" --clobber
+          gh release edit "$TAG" --repo "$RELEASE_REPOSITORY" --draft=false --latest
