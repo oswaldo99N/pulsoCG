@@ -2,6 +2,16 @@
 
 Repositorio: [oswaldo99N/pulsoCG](https://github.com/oswaldo99N/pulsoCG).
 
+## Descargar la aplicación
+
+Abre [Releases](https://github.com/oswaldo99N/pulsoCG/releases) y descarga el instalador de tu sistema en **Assets**:
+
+- [Windows x64 — instalador EXE](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.1.1/Pulso-CG-2.1.1-Windows-Setup.exe)
+- [Mac Apple Silicon (M1, M2, M3 y posteriores) — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.1.1/Pulso-CG-2.1.1-mac-arm64.dmg)
+- [Mac Intel — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.1.1/Pulso-CG-2.1.1-mac-x64.dmg)
+
+La descarga disponible es la **2.1.1**, sin actualizador automático. Los instaladores Mac tienen firma local y Windows puede mostrar editor desconocido.
+
 Desde la versión 2.2.0: avisos y descargas de actualizaciones dentro de la app.
 Consulta [la guía de publicación y configuración de Apple](ACTUALIZACIONES.md).
 
