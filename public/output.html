@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pulso CG · Output</title>
+    <script>if(["editor","monitor"].includes(new URLSearchParams(location.search).get("mode")))document.documentElement.classList.add("preview-mode")</script>
+    <script>
+      // Si algo falla dentro de OBS/vMix (sin consola visible), se avisa al panel.
+      (function () {
+        function report(message) { try { navigator.sendBeacon("/api/client-log", JSON.stringify({ message: String(message) })); } catch (e) {} }
+        addEventListener("error", function (event) { report((event.message || "Error al cargar " + (event.target && (event.target.src || event.target.href))) + (event.filename ? " (" + event.filename.split("/").pop() + ":" + event.lineno + ")" : "")); }, true);
+        addEventListener("unhandledrejection", function (event) { report("Promesa rechazada: " + (event.reason && event.reason.message || event.reason)); });
+      })();
+    </script>
+    <link rel="stylesheet" href="/fonts.css" />
+    <link rel="stylesheet" href="/output.css" />
+    <link rel="stylesheet" href="/news.css" />
+    <link rel="stylesheet" href="/sports.css" />
+    <script src="/vendor/gsap.min.js"></script>
+    <script src="/vendor/SplitText.min.js"></script>
+    <script src="/vendor/CustomEase.min.js"></script>
+  </head>
+  <body>
+    <main class="stage" aria-label="Salida gráfica">
+      <div class="preview-backdrop" id="backdrop" aria-hidden="true"></div>
+      <div class="canvas" id="canvas">
+        <div class="safe-guides" id="safeGuides" hidden><i class="action"></i><i class="title"></i><i class="h"></i><i class="v"></i></div>
+      </div>
+    </main>
+    <script type="module" src="/output.js"></script>
+  </body>
+</html>

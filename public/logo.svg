@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 48" role="img" aria-labelledby="title desc">
+  <title id="title">Pulso CG</title>
+  <desc id="desc">Monograma P formado por una señal de pulso y nombre Pulso CG.</desc>
+  <g fill="none" stroke="#ff5b45" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M5 39V9h16c10 0 16 5 16 13s-6 13-16 13H14" stroke-width="6"/>
+    <path d="M1 27h9l5-9 7 17 6-10h12" stroke-width="3"/>
+  </g>
+  <g fill="#edf1f5" font-family="Arial, Helvetica, sans-serif">
+    <text x="51" y="31" font-size="26" font-weight="700" letter-spacing="-1">PULSO</text>
+    <text x="141" y="31" font-size="15" font-weight="700" letter-spacing="1.5" fill="#aab4c3">CG</text>
+  </g>
+</svg>

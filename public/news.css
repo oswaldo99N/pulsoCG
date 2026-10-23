@@ -1,0 +1,126 @@
+/* Pulso CG · paquete de noticias premium.
+   Mismos materiales del sistema (placa con luz, grano, bisel) + recursos de
+   canales actuales: barras de color en las entradas, bandera EN VIVO,
+   banda de cargo, franjas animadas en última hora y relojes en vivo. */
+
+/* Barrido de barras (entrada): tres franjas que cruzan y descubren la pieza. */
+.nw-wipe{position:absolute;inset:-6px -10px;z-index:20;display:flex;flex-direction:column;pointer-events:none}
+.nw-wipe i{flex:1;transform:scaleX(0)}
+.nw-wipe i:nth-child(1){background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.nw-wipe i:nth-child(2){background:rgb(var(--ink-rgb))}
+.nw-wipe i:nth-child(3){background:linear-gradient(90deg,var(--acc2),var(--acc))}
+
+/* Destello vivo: un reflejo suave recorre la placa cada pocos segundos. */
+.nw-streak{inset:0;z-index:2;background:linear-gradient(100deg,transparent 40%,rgb(255 255 255/.10) 50%,transparent 60%);background-size:300% 100%;mix-blend-mode:screen;animation:nw-streak 7s ease-in-out infinite}
+@keyframes nw-streak{0%,60%{background-position:120% 0}100%{background-position:-20% 0}}
+
+.nw-stack{position:relative;display:flex;flex-direction:column;align-items:flex-start}
+.align-right .nw-stack{align-items:flex-end}
+.align-center .nw-stack{align-items:center}
+.nw-main{display:flex;align-items:center;gap:28px}
+
+/* Bandera / categoría sobre la placa */
+.nw-kicker{position:relative;z-index:3;display:flex;align-items:center;gap:10px;height:calc(36px*var(--s-scale));padding:0 16px;margin-left:14px;
+  border-radius:calc(var(--r)*.6) calc(var(--r)*.6) 0 0;color:var(--on-acc);text-shadow:none;
+  background:linear-gradient(180deg,rgb(255 255 255/.22),rgb(255 255 255/0) 60%),linear-gradient(90deg,var(--acc),var(--acc2) 180%);
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 -6px 24px -8px rgb(var(--acc-rgb)/.8)}
+.nw-kicker .label{font-size:calc(16px*var(--s-scale));font-weight:800}
+.align-right .nw-kicker{margin:0 14px 0 0}
+
+/* Banda de cargo: color de acento con laca, bajo la placa principal */
+.nw-band{position:relative;z-index:2;display:flex;align-items:center;min-height:calc(46px*var(--s-scale));margin-top:-2px;padding:0 28px;
+  border-radius:0 0 calc(var(--r)*.7) calc(var(--r)*.7);color:var(--on-acc);text-shadow:none;
+  background:linear-gradient(180deg,rgb(255 255 255/.24),rgb(255 255 255/0) 55%),linear-gradient(90deg,var(--acc),var(--acc2) 200%);
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.4),inset 0 -1px 0 rgb(0 0 0/.18),0 14px 30px -12px rgb(var(--acc-rgb)/.75)}
+.nw-band .secondary{color:inherit;font-weight:600;font-size:calc(25px*var(--s-scale))}
+
+/* ── Rótulo de nombre (dos niveles + logo del canal) ─────────────────── */
+.nw-lt{position:relative;display:flex;align-items:flex-end;gap:12px}
+.align-right .nw-lt{flex-direction:row-reverse}
+.nw-brand{display:grid;place-items:center;align-self:stretch;margin-top:calc(36px*var(--s-scale));padding:16px 22px;border-radius:var(--r);
+  background:linear-gradient(180deg,rgb(255 255 255/.16),rgb(255 255 255/.03)),rgb(var(--surface-rgb)/var(--alpha));
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.25),inset 0 0 0 1px rgb(255 255 255/.07),inset 0 -3px 0 var(--acc),var(--elev)}
+.nw-brand img{display:block;height:58px;width:auto;max-width:220px;object-fit:contain;filter:drop-shadow(0 2px 6px rgb(0 0 0/.35))}
+.nw-lt .nw-main{min-width:560px;padding:20px 54px 20px 30px;border-radius:var(--r) var(--r) 0 0}
+.nw-lt .nw-stack:not(:has(.nw-band:not([hidden]))) .nw-main{border-radius:var(--r)}
+.nw-lt .primary{font-size:calc(60px*var(--p-scale));white-space:nowrap}
+.nw-lt .nw-band{align-self:stretch}
+
+/* ── Texto simple ────────────────────────────────────────────────────── */
+.nw-sl{position:relative;display:flex;align-items:stretch;min-height:calc(86px*var(--p-scale))}
+.nw-sl .tag{padding:0 26px;border-radius:var(--r) 0 0 var(--r)}
+.nw-sl .tag .label{font-size:calc(19px*var(--s-scale));font-weight:800}
+.nw-sl .nw-main{padding:0 46px 0 30px;border-radius:0 var(--r) var(--r) 0}
+.nw-sl .tag[hidden]+.nw-main{border-radius:var(--r)}
+.nw-sl .primary{font-size:calc(42px*var(--p-scale));white-space:nowrap}
+
+/* ── Titular con bandera EN VIVO y reloj ─────────────────────────────── */
+.nw-hl{position:relative;display:flex;align-items:flex-end;gap:10px}
+.nw-live{display:flex;flex-direction:column;align-self:stretch;margin-top:calc(36px*var(--s-scale));min-width:148px;border-radius:var(--r);overflow:hidden;box-shadow:var(--elev)}
+.nw-flag{display:flex;align-items:center;justify-content:center;gap:9px;height:46px;padding:0 16px;font:850 calc(17px*var(--s-scale))/1 var(--font);letter-spacing:.12em;color:#fff;text-shadow:none;
+  background:linear-gradient(180deg,rgb(255 255 255/.25),rgb(255 255 255/0) 60%),#e3132b;box-shadow:inset 0 1px 0 rgb(255 255 255/.4)}
+.nw-clock{display:grid;place-items:center;flex:1;font:600 calc(32px*var(--p-scale))/1 "JetBrains Mono Variable",monospace;letter-spacing:-.02em;
+  background:linear-gradient(180deg,rgb(255 255 255/.1),rgb(255 255 255/.02)),rgb(var(--surface-rgb)/var(--alpha));box-shadow:inset 0 1px 0 rgb(255 255 255/.12)}
+.nw-hl .nw-main{min-width:820px;max-width:1360px;padding:24px 56px 26px 36px}
+.nw-hl .nw-kicker:not([hidden])+.nw-main{border-top-left-radius:0}
+.nw-hl .primary{font-size:calc(50px*var(--p-scale));line-height:1.1;text-wrap:balance}
+
+/* ── Última hora: franjas en movimiento y brillo pulsante ────────────── */
+.nw-bk{position:relative;display:flex;align-items:stretch;width:100%;min-height:calc(128px*var(--p-scale))}
+.nw-bk-label{position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;min-width:300px;padding:0 34px;border-radius:var(--r) 0 0 var(--r);color:#fff;text-shadow:0 1px 2px rgb(0 0 0/.3);
+  background:linear-gradient(180deg,rgb(255 255 255/.25),rgb(255 255 255/0) 55%),linear-gradient(135deg,#ff2a3f,#c2001b);
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 0 60px -10px rgb(255 30 50/.9);animation:nw-pulse 1.8s ease-in-out infinite}
+.nw-bk-label>*:not(.nw-stripes){position:relative}
+.nw-bk-label .label{font-size:calc(26px*var(--s-scale));font-weight:900}
+.nw-stripes{inset:0;opacity:.18;background:repeating-linear-gradient(-45deg,#fff 0 14px,transparent 14px 34px);background-size:48px 48px;animation:nw-stripes 1.2s linear infinite}
+@keyframes nw-stripes{to{background-position:48px 0}}
+@keyframes nw-pulse{50%{box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 0 90px -6px rgb(255 30 50/1)}}
+.nw-bk-main{flex:1;display:flex;align-items:center;padding:20px 48px;border-radius:0;
+  background:linear-gradient(90deg,rgb(200 0 27/.45),rgb(200 0 27/.08) 50%,transparent 75%),rgb(var(--surface-rgb)/var(--alpha))}
+.nw-bk .primary{font-size:calc(50px*var(--p-scale));line-height:1.1;text-wrap:balance}
+.nw-bk-clock{display:grid;place-items:center;min-width:150px;border-radius:0 var(--r) var(--r) 0;font:600 calc(32px*var(--p-scale))/1 "JetBrains Mono Variable",monospace;
+  background:linear-gradient(180deg,rgb(255 255 255/.1),rgb(255 255 255/.02)),rgb(var(--surface-rgb)/var(--alpha));box-shadow:inset 1px 0 0 rgb(255 255 255/.1),var(--elev)}
+
+/* ── Ubicación en vivo ───────────────────────────────────────────────── */
+.orb{display:grid;place-items:center;flex:none;width:104px;border-radius:var(--r);color:var(--on-acc);
+  background:radial-gradient(circle at 30% 22%,rgb(255 255 255/.42),transparent 42%),linear-gradient(160deg,var(--acc2),var(--acc) 70%);
+  box-shadow:inset 0 1px 0 rgb(255 255 255/.45),inset 0 -2px 0 rgb(0 0 0/.18),0 0 32px -6px rgb(var(--acc-rgb)/.7),var(--elev)}
+.orb svg{width:46px;height:46px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 3px rgb(0 0 0/.25))}
+.nw-loc{position:relative;display:flex;align-items:flex-end;gap:12px}
+.align-right .nw-loc{flex-direction:row-reverse}
+.nw-loc .orb{align-self:stretch;margin-top:calc(36px*var(--s-scale))}
+.nw-loc .nw-main{min-width:520px;padding:18px 34px 18px 30px;border-radius:var(--r) var(--r) 0 0}
+.nw-loc .nw-stack:not(:has(.nw-band:not([hidden]))) .nw-main{border-radius:var(--r)}
+.nw-loc .primary{font-size:calc(56px*var(--p-scale));white-space:nowrap}
+.nw-loc .nw-band{align-self:stretch}
+.nw-time{margin-left:auto;padding:8px 12px;border-radius:calc(var(--r)*.6);font:600 calc(24px*var(--s-scale))/1 "JetBrains Mono Variable",monospace;background:rgb(var(--ink-rgb)/.08);box-shadow:inset 0 0 0 1px rgb(var(--ink-rgb)/.1)}
+
+/* ── Cinta de noticias con logo y reloj ──────────────────────────────── */
+.nw-tk{display:flex;align-items:stretch;width:100%;height:calc(68px*var(--p-scale));gap:0}
+.nw-tk .nw-brand{margin:0;padding:0 18px;border-radius:var(--r) 0 0 var(--r);box-shadow:inset 0 1px 0 rgb(255 255 255/.25),inset -3px 0 0 var(--acc),var(--elev)}
+.nw-tk .nw-brand img{height:36px;max-width:170px}
+.nw-tk-label{padding:0 26px;gap:12px}
+.nw-tk-label .label{font-size:calc(18px*var(--s-scale));font-weight:800}
+.nw-tk .nw-brand[hidden]+.nw-tk-label{border-radius:var(--r) 0 0 var(--r)}
+.nw-tk-main{flex:1;min-width:0;display:flex;border-radius:0}
+.nw-tk .tk-window{min-width:0}
+.nw-tk-clock{display:grid;place-items:center;min-width:130px;border-radius:0 var(--r) var(--r) 0;font:600 calc(28px*var(--p-scale))/1 "JetBrains Mono Variable",monospace;color:var(--on-acc);text-shadow:none;
+  background:linear-gradient(180deg,rgb(255 255 255/.22),rgb(255 255 255/0) 55%),linear-gradient(135deg,var(--acc),var(--acc2) 180%);box-shadow:inset 0 1px 0 rgb(255 255 255/.4)}
+
+/* ── Mosca: bandera EN VIVO sobre el logo, reloj ─────────────────────── */
+.nw-bug{display:flex;flex-direction:column;align-items:flex-end;width:max-content}
+.nw-bug-flag{display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;margin-right:12px;border-radius:calc(var(--r)*.5) calc(var(--r)*.5) 0 0;color:#fff;text-shadow:none;
+  background:linear-gradient(180deg,rgb(255 255 255/.25),rgb(255 255 255/0) 60%),#e3132b;box-shadow:inset 0 1px 0 rgb(255 255 255/.4),0 0 24px -6px rgb(227 19 43/.9)}
+.nw-bug-flag .label{font-size:calc(13px*var(--s-scale));font-weight:850}
+.nw-bug-main{display:flex;align-items:center;gap:16px;height:calc(72px*var(--p-scale));padding:0 10px 0 18px}
+.nw-bug-logo{height:40px;width:auto;max-width:170px;object-fit:contain;filter:drop-shadow(0 2px 6px rgb(0 0 0/.35))}
+.nw-bug .primary{font-size:calc(28px*var(--p-scale));letter-spacing:.01em}
+.nw-bug-clock{align-self:stretch;display:grid;place-items:center;margin:10px 0;padding:0 14px;border-radius:calc(var(--r)*.6);font:600 calc(22px*var(--s-scale))/1 "JetBrains Mono Variable",monospace;background:rgb(var(--ink-rgb)/.08);box-shadow:inset 0 0 0 1px rgb(var(--ink-rgb)/.1)}
+
+/* Próximamente y titulares también reciben el barrido de barras */
+.up,.qt{position:relative}
+
+@media(prefers-reduced-motion:reduce){.nw-streak,.nw-stripes,.nw-bk-label{animation:none}}
+
+/* Las piezas a lo ancho ocupan su ancla sin crecer con el contenido (cinta). */
+.anchor-ticker>.gfx,.anchor-wide>.gfx{flex:1;min-width:0}

@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es" style="color-scheme:dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0b0d">
+  <meta name="description" content="Pulso CG: crea, muestra y mueve gráficos en pantalla para OBS y vMix.">
+  <title>Pulso CG</title>
+  <link rel="stylesheet" href="/fonts.css">
+  <link rel="stylesheet" href="/vendor/coloris.min.css">
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/vendor/lucide.min.js"></script>
+  <script defer src="/vendor/coloris.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="/logo.svg" alt="Pulso CG"></div>
+    <button class="profile-button" id="profileButton" type="button" title="Cambiar o crear perfiles"><i data-lucide="folder-open"></i><span class="muted">Perfil</span><b id="profileName">…</b><i data-lucide="chevrons-up-down"></i></button>
+    <div class="topbar-end">
+      <div class="sim-banner" id="simBanner" hidden><i class="dot"></i><span id="simText"></span><button type="button" id="simStop">Detener</button></div>
+      <span class="conn" aria-live="polite"><i class="dot"></i><span id="connectionText">Conectando…</span></span>
+      <button class="obs-pill" id="obsStatus" type="button" title="¿Está OBS o vMix recibiendo los gráficos?"><i class="dot"></i><span>OBS…</span></button>
+      <span class="onair-pill" id="activeCount">Nada en pantalla</span>
+      <button class="ghost" id="obsButton" type="button" title="Enlaces para OBS o vMix en este equipo o en otra PC"><i data-lucide="link"></i>Conectar OBS</button>
+      <button class="ghost" id="helpButton" type="button"><i data-lucide="circle-help"></i>Cómo se usa</button>
+      <button class="ghost danger" id="hideAllButton" type="button"><i data-lucide="eye-off"></i>Ocultar todo</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- 1 · LISTA -->
+    <aside class="pane list-pane" aria-label="Gráficos y guardados">
+      <div class="pane-head">
+        <div class="pane-title"><span class="step">1</span>
+          <div class="list-tabs" role="tablist">
+            <button role="tab" type="button" data-list-tab="items" aria-selected="true">Mis gráficos <b id="itemCount"></b></button>
+            <button role="tab" type="button" data-list-tab="library" aria-selected="false">Guardados <b id="libraryCount"></b></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-view" data-list-view="items">
+        <button class="button add" id="addButton" type="button"><i data-lucide="plus"></i>Nuevo gráfico</button>
+        <ul class="items" id="itemList"></ul>
+        <p class="list-hint">Puedes mostrar varios a la vez. Pulsa el ojo para mostrar u ocultar cada uno.</p>
+      </div>
+
+      <div class="list-view" data-list-view="library" hidden>
+        <div class="library-tools">
+          <label class="search"><i data-lucide="search"></i><input id="librarySearch" type="search" placeholder="Buscar nombre o titular…" autocomplete="off"></label>
+          <button class="icon-button" id="importButton" type="button" title="Pegar una lista de nombres o titulares"><i data-lucide="clipboard-paste"></i></button>
+        </div>
+        <div class="folders" id="libraryFolders" role="group" aria-label="Carpetas"></div>
+        <ul class="saved-list" id="libraryList"></ul>
+        <p class="list-hint">Todo lo que muestras se guarda solo. Clic para cargarlo en el gráfico elegido; pulsa Guardar cambios para confirmar los textos que cargues.</p>
+      </div>
+    </aside>
+
+    <!-- 2 · PANTALLA -->
+    <section class="stagearea" aria-labelledby="screenTitle">
+      <div class="screen-card">
+        <div class="screen-head">
+          <div class="pane-title"><span class="step">2</span><h2 id="screenTitle">Pantalla</h2></div>
+          <span class="muted small screen-tip">Arrastra un gráfico para moverlo · el punto blanco de la esquina cambia el tamaño</span>
+          <div class="screen-tools">
+            <div class="seg small" role="group" aria-label="Fondo de prueba" id="backdropPicker">
+              <button type="button" data-backdrop="studio" aria-pressed="true">Estudio</button>
+              <button type="button" data-backdrop="checker" aria-pressed="false">Transparente</button>
+              <button type="button" data-backdrop="light" aria-pressed="false">Claro</button>
+              <label class="seg-upload" title="Usa una foto de tu programa como fondo de prueba"><input type="file" id="backdropUpload" accept="image/*"><i data-lucide="image-plus"></i></label>
+            </div>
+            <button class="icon-button" type="button" id="guidesButton" aria-pressed="false" title="Mostrar márgenes seguros"><i data-lucide="grid-3x3"></i></button>
+          </div>
+        </div>
+        <div class="screen">
+          <iframe id="screenFrame" src="/output?mode=editor" title="Pantalla de salida (editable)"></iframe>
+          <div class="screen-empty" id="screenEmpty" hidden>
+            <strong>Empieza creando tu primer gráfico</strong>
+            <button class="button add" type="button" data-add><i data-lucide="plus"></i>Nuevo gráfico</button>
+          </div>
+        </div>
+        <p class="screen-legend"><span><i class="lg live"></i>Contorno azul: se ve en pantalla</span><span><i class="lg ghost"></i>Contorno punteado: vista previa individual</span></p>
+      </div>
+    </section>
+
+    <!-- 3 · EDITAR -->
+    <aside class="pane editor-pane" aria-labelledby="editorTitle">
+      <div class="pane-head">
+        <div class="pane-title"><span class="step">3</span><h2 id="editorTitle">Editar</h2></div>
+        <span class="save-state" id="saveState"></span>
+      </div>
+      <div id="editor" class="editor"></div>
+    </aside>
+  </main>
+
+  <dialog class="modal" id="templateDialog" aria-labelledby="templateDialogTitle">
+    <form method="dialog" class="modal-head"><h2 id="templateDialogTitle">¿Qué quieres poner en pantalla?</h2><button class="icon-button" value="cancel" aria-label="Cerrar"><i data-lucide="x"></i></button></form>
+    <div class="template-grid" id="templateGrid"></div>
+  </dialog>
+
+  <dialog class="modal profiles-modal" id="profileDialog" aria-labelledby="profileTitle">
+    <form method="dialog" class="modal-head"><h2 id="profileTitle">Perfiles</h2><button class="icon-button" value="cancel" aria-label="Cerrar"><i data-lucide="x"></i></button></form>
+    <p class="modal-intro muted">Cada perfil guarda sus propios gráficos ya acomodados y sus nombres y titulares. Cambiar de perfil no borra nada.</p>
+    <ul class="profile-list" id="profileList"></ul>
+    <div class="profile-presets-head"><b>Crear un perfil listo para usar</b><span class="muted small">Gráficos ya acomodados, estilo del deporte y planteles de ejemplo.</span></div>
+    <div class="profile-presets" id="profilePresets"></div>
+    <div class="profile-presets-head"><b>Ensayo en tiempo real</b><span class="muted small">Reproduce una transmisión completa (partido o noticiero) en un perfil aparte “Ensayo · …”. Míralo en la pantalla del panel y en OBS. Tus perfiles no se tocan.</span></div>
+    <div class="sim-buttons" id="simButtons"></div>
+    <form class="profile-new" id="profileForm">
+      <input class="input" id="profileNewName" maxlength="40" placeholder="Nombre del perfil nuevo, p. ej. Deportes" required>
+      <select class="select" id="profileNewMode" aria-label="Contenido del perfil nuevo"><option value="empty">Empezar vacío</option><option value="copy">Copiar el perfil actual</option></select>
+      <button class="button" type="submit"><i data-lucide="plus"></i>Crear</button>
+    </form>
+    <div class="backup-row">
+      <a class="button" href="/api/export-all" download><i data-lucide="hard-drive-download"></i>Descargar copia completa</a>
+      <label class="upload profile-import"><i data-lucide="upload"></i><span>Importar copia o perfil (.json)</span><input id="profileImport" type="file" accept="application/json,.json"></label>
+    </div>
+    <p class="muted small data-path" id="dataPath"></p>
+  </dialog>
+
+  <dialog class="modal import-modal" id="importDialog" aria-labelledby="importTitle">
+    <form method="dialog" class="modal-head"><h2 id="importTitle">Pegar una lista</h2><button class="icon-button" value="cancel" aria-label="Cerrar"><i data-lucide="x"></i></button></form>
+    <form class="import-body" id="importForm">
+      <label class="field"><span class="muted">¿Qué vas a pegar?</span><select class="select" id="importType"></select></label>
+      <label class="field"><span class="muted" id="importHelp"></span><textarea class="input" id="importText" rows="9" placeholder=""></textarea></label>
+      <span class="field-error" id="importError"></span>
+      <button class="button add" type="submit"><i data-lucide="save"></i>Guardar en Guardados</button>
+    </form>
+  </dialog>
+
+  <dialog class="modal obs-modal" id="obsDialog" aria-labelledby="obsTitle">
+    <form method="dialog" class="modal-head"><h2 id="obsTitle">Conectar con OBS o vMix</h2><button class="icon-button" value="cancel" aria-label="Cerrar"><i data-lucide="x"></i></button></form>
+    <div class="obs-body">
+      <div class="obs-state" id="obsState"></div>
+      <div id="lanBox"></div>
+      <h3>OBS Studio</h3>
+      <ol class="steps">
+        <li>En <em>Fuentes</em> pulsa <b>+</b> y elige <b>Navegador</b>.</li>
+        <li>En <b>URL</b> pega el enlace de red de arriba. Si OBS está en el equipo que abre este panel, también puedes usar: <code class="copy" data-copy-url="local"></code></li>
+        <li>Ancho <b>1920</b>, alto <b>1080</b>. Desactiva “Apagar la fuente cuando no sea visible”.</li>
+        <li>Si sigue en negro: selecciona la fuente y pulsa <b>Actualizar</b>.</li>
+      </ol>
+      <h3>¿OBS sigue en negro? Prueba de diagnóstico</h3>
+      <ol class="steps">
+        <li>En la fuente Navegador cambia la URL a <code class="copy" data-copy-url="test">http://localhost:4173/test-obs</code> y pulsa Aceptar.</li>
+        <li><b>Si ves un recuadro verde</b> que dice “Pulso CG conectado”: la página y los datos llegan. Vuelve a la dirección completa terminada en <b>/output</b>.</li>
+        <li><b>Si sigue en negro</b>: en OBS ve a <b>Ajustes → Avanzado</b>, desactiva <b>“Habilitar aceleración por hardware de la fuente de navegador”</b> y reinicia OBS.</li>
+      </ol>
+      <h3>Actividad reciente</h3>
+      <ul class="obs-activity" id="obsActivity"></ul>
+      <h3>vMix</h3>
+      <ol class="steps"><li>Add Input → <b>Web Browser</b>, misma URL, 1920 × 1080, y ponlo en un Overlay.</li></ol>
+
+      <p class="muted small">Mantén Pulso CG abierto en el equipo emisor. Si la prueba no abre desde la otra PC, comprueba que no sea una red de invitados y permite conexiones entrantes a Pulso CG en el firewall (TCP 4173). No necesitas abrir puertos del router para usar la misma red local.</p>
+    </div>
+  </dialog>
+
+  <dialog class="modal help" id="helpDialog" aria-labelledby="helpTitle">
+    <form method="dialog" class="modal-head"><h2 id="helpTitle">Cómo se usa</h2><button class="icon-button" value="cancel" aria-label="Cerrar"><i data-lucide="x"></i></button></form>
+    <ol class="steps">
+      <li><b>Crea un gráfico</b> con <em>Nuevo gráfico</em> y elige el tipo (nombre, titular, cinta…).</li>
+      <li><b>Edita el texto y el diseño</b> en el panel de la derecha y pulsa <em>Guardar cambios</em> para aplicarlos juntos.</li>
+      <li><b>Pulsa Mostrar</b> (o el ojo de la lista). Entra con su animación y ya lo ve el público.</li>
+      <li><b>Muévelo</b> arrastrándolo en la pantalla o con <em>Posiciones rápidas</em>. El punto blanco de la esquina cambia el tamaño.</li>
+      <li><b>Repite</b> para tener varios a la vez. Cada uno se muestra y oculta por separado.</li>
+      <li><b>Guardados</b>: todo lo que muestras queda guardado. Ábrelo para reutilizar nombres y titulares con un clic, o pega una lista completa.</li>
+      <li><b>Perfiles</b> (arriba a la izquierda): un perfil por programa. Cada uno conserva sus gráficos y sus guardados.</li>
+    </ol>
+    <p class="muted">Los cambios de texto, logos, posición y diseño se ven primero en la vista previa. Pulsa Guardar cambios para aplicarlos juntos; Descartar recupera lo guardado.</p>
+    <h3>Conectar con OBS o vMix</h3>
+    <p class="muted">Pulsa <em>Conectar OBS</em> y pégalo en una <b>Fuente de navegador</b> (OBS) o una entrada <b>Web Browser</b> (vMix) de 1920 × 1080.</p>
+    <h3>Atajos</h3>
+    <p class="muted"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> mostrar u ocultar el gráfico elegido · flechas para moverlo (con <kbd>Shift</kbd>, de 10 en 10)</p>
+  </dialog>
+
+  <div id="announcer" class="sr-only" aria-live="assertive"></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

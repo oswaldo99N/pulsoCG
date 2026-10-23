@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pulso CG · Prueba de red</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:Arial,Helvetica,sans-serif}
+.card{position:absolute;box-sizing:border-box;left:50%;top:50%;width:1200px;max-width:94vw;transform:translate(-50%,-50%);padding:36px 42px;border-radius:24px;background:linear-gradient(135deg,#92400e,#334155);color:#fff;box-shadow:0 30px 80px rgba(0,0,0,.5);text-align:center}
+.card[data-state=ok]{background:linear-gradient(135deg,#15803d,#0e7490)}
+.card[data-state=error]{background:linear-gradient(135deg,#991b1b,#7c2d12)}
+h1{margin:0 0 16px;font-size:clamp(28px,4vw,62px);line-height:1.1}
+p{margin:10px 0;font-size:clamp(16px,2vw,26px);overflow-wrap:anywhere}
+a{color:#fff}code{font-size:clamp(14px,1.6vw,22px);overflow-wrap:anywhere}
+button{padding:10px 16px;margin:12px;border:1px solid #ffffff88;border-radius:7px;background:#ffffff22;color:#fff;font-size:16px;cursor:pointer}
+.bar{height:12px;margin-top:22px;border-radius:8px;background:#ffffff44;overflow:hidden}.bar i{display:block;width:30%;height:100%;background:#fff;animation:move 1.6s ease-in-out infinite alternate}@keyframes move{to{transform:translateX(233%)}}
+</style>
+</head>
+<body>
+<div class="card" id="card" data-state="waiting">
+<h1 id="title">Comprobando conexión con Pulso CG…</h1>
+<p id="status">Esperando datos en directo del equipo emisor.</p>
+<p>Servidor: <b id="host"></b> · Tu equipo: <span id="client">comprobando…</span></p>
+<p id="live">Comprobando gráficos al aire…</p>
+<p>En OBS o vMix usa esta dirección completa, a 1920 × 1080:</p>
+<p><a id="output"><code id="outputText"></code></a></p>
+<button type="button" id="copy">Copiar enlace para OBS</button>
+<p id="updated">La salida conserva el fondo transparente.</p>
+<div class="bar"><i></i></div>
+</div>
+<script>
+(function(){
+ var output=location.origin+'/output', card=document.getElementById('card');
+ document.getElementById('host').textContent=location.host;
+ document.getElementById('output').href=output;
+ document.getElementById('outputText').textContent=output;
+ document.getElementById('copy').onclick=function(){
+  if(navigator.clipboard) navigator.clipboard.writeText(output).then(function(){document.getElementById('copy').textContent='Enlace copiado';}).catch(function(){prompt('Copia este enlace:',output);});
+  else prompt('Copia este enlace:',output);
+ };
+ fetch('/api/network',{cache:'no-store'}).then(function(r){if(!r.ok)throw Error();return r.json();}).then(function(info){document.getElementById('client').textContent=info.clientAddress||'conectado';}).catch(function(){document.getElementById('client').textContent='no disponible';});
+ try {
+  var events=new EventSource('/events?client=output&probe=1');
+  events.addEventListener('state',function(event){
+   var data=JSON.parse(event.data), count=data.items.filter(function(i){return i.onAir&&i.phase!=='exiting';}).length;
+   card.dataset.state='ok';document.getElementById('title').textContent='✓ Pulso CG conectado';
+   document.getElementById('status').textContent='La página y los datos en directo llegan a este equipo.';
+   document.getElementById('live').textContent=count ? count+' gráfico(s) al aire. Ya puedes usar /output.' : 'No hay gráficos al aire. Pulsa Mostrar en pantalla desde el panel.';
+   document.getElementById('updated').textContent='Datos recibidos: '+new Date().toLocaleTimeString()+' · revisión '+data.revision;
+  });
+  events.onerror=function(){card.dataset.state='error';document.getElementById('title').textContent='Sin conexión con Pulso CG';document.getElementById('status').textContent='Mantén abierto el programa emisor y comprueba la red. Se reintentará automáticamente.';};
+ } catch(error) {card.dataset.state='error';document.getElementById('status').textContent='Este navegador no pudo abrir la conexión de datos.';}
+})();
+</script>
+</body>
+</html>
