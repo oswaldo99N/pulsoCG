@@ -1,6 +1,6 @@
 {
   "name": "pulso-cg",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "private": true,
   "type": "module",
   "description": "Grafismo broadcast para OBS y vMix: noticias y deportes.",
@@ -28,7 +28,7 @@
     "appId": "com.pulsocg.app",
     "productName": "Pulso CG",
     "directories": {
-      "output": "dist/2.2.0",
+      "output": "dist/2.2.1",
       "buildResources": "build"
     },
     "files": [

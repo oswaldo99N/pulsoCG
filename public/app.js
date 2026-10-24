@@ -1132,3 +1132,8 @@ events.addEventListener("state", event => renderState(JSON.parse(event.data)));
 events.onerror = () => { document.body.classList.remove("connected"); $("#connectionText").textContent = "Reconectando…"; };
 
 setupUpdateUI();
+fetch('/api/health', { cache: 'no-store' }).then(response => response.json()).then(info => {
+  if (info.application !== 'pulso-cg' || !info.version) return;
+  document.querySelector('#appVersion').textContent = `v${info.version}`;
+  document.title = `Pulso CG ${info.version}`;
+}).catch(() => {});

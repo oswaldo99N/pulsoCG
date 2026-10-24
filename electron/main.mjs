@@ -8,13 +8,14 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { setupUpdates } from "./updates.mjs";
+import { assertServerVersion } from "./server-version.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 app.setName("Pulso CG");
 if (process.platform === "win32") app.setAppUserModelId("com.pulsocg.app");
 
 // Una sola instancia: si se abre otra vez, se enfoca la ventana existente.
-if (!app.requestSingleInstanceLock()) app.quit();
+const ownsInstance = app.requestSingleInstanceLock();
 
 let win = null;
 let info = null;
@@ -30,12 +31,13 @@ async function startServer() {
 function createWindow() {
   win = new BrowserWindow({
     width: 1600, height: 960, minWidth: 1100, minHeight: 700,
-    backgroundColor: "#0b0b0d", title: "Pulso CG", show: false,
+    backgroundColor: "#0b0b0d", title: `Pulso CG ${app.getVersion()}`, show: false,
     icon: path.join(root, "build", "icon.png"),
     webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(root, "electron", "preload.cjs") }
   });
   win.once("ready-to-show", () => win.show());
   win.loadURL(info.url);
+  win.on("page-title-updated", event => { event.preventDefault(); win.setTitle(`Pulso CG ${app.getVersion()}`); });
 
   // Enlaces a otras páginas (p. ej. "Abrir salida") se abren en el navegador.
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: "deny" }; });
@@ -84,10 +86,18 @@ app.on("window-all-closed", () => app.quit());
 app.on("activate", () => { if (!win && info) createWindow(); });
 
 app.whenReady().then(async () => {
+  if (!ownsInstance) {
+    dialog.showMessageBoxSync({ type: "info", message: `Ya hay otra copia de Pulso CG abierta`, detail: `Estás intentando abrir Pulso CG ${app.getVersion()}. Para usar esta versión, cierra primero la otra copia con Cmd+Q en Mac o Salir en Windows, y vuelve a abrirla. Abrir un DMG no reemplaza la app instalada: arrástrala a Aplicaciones y acepta Reemplazar.` });
+    app.quit();
+    return;
+  }
   try {
     info = await startServer();
     if (info.alreadyRunning) {
-      dialog.showMessageBoxSync({ type: "info", message: "Pulso CG ya está funcionando", detail: "Hay otra copia del programa abierta (por ejemplo, desde start.sh). Esta ventana se conecta a ella." });
+      const response = await fetch(`${info.url}/api/health`, { signal: AbortSignal.timeout(5000) });
+      const running = response.ok ? await response.json() : {};
+      assertServerVersion(running, app.getVersion(), info.port);
+      dialog.showMessageBoxSync({ type: "info", message: "Pulso CG ya está funcionando", detail: `Esta ventana se conecta al servidor de la misma versión ${running.version}.` });
     }
     updates = await setupUpdates({ app, getWindow: () => win, getServerInfo: () => info, beforeInstall: () => { quitting = true; }, onInstallError: () => { quitting = false; } });
     createWindow();

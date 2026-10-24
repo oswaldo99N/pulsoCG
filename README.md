@@ -6,11 +6,13 @@ Repositorio: [oswaldo99N/pulsoCG](https://github.com/oswaldo99N/pulsoCG).
 
 Abre [Releases](https://github.com/oswaldo99N/pulsoCG/releases) y descarga el instalador de tu sistema en **Assets**:
 
-- [Windows x64 — instalador EXE](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.1.1/Pulso-CG-2.1.1-Windows-Setup.exe)
-- [Mac Apple Silicon (M1, M2, M3 y posteriores) — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.1.1/Pulso-CG-2.1.1-mac-arm64.dmg)
-- [Mac Intel — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.1.1/Pulso-CG-2.1.1-mac-x64.dmg)
+- [Windows x64 — instalador EXE](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.1/Pulso-CG-2.2.1-Windows-Setup.exe)
+- [Mac Apple Silicon (M1, M2, M3 y posteriores) — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.1/Pulso-CG-2.2.1-mac-arm64.dmg)
+- [Mac Intel — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.1/Pulso-CG-2.2.1-mac-x64.dmg)
 
-La descarga disponible es la **2.1.1**, sin actualizador automático. Los instaladores Mac tienen firma local y Windows puede mostrar editor desconocido.
+La descarga disponible es la **2.2.1**, con avisos de actualización. Esta distribución Mac tiene firma local: ofrece descarga manual; la instalación automática en Mac requiere la futura distribución con Developer ID y notarización. Windows puede mostrar editor desconocido.
+
+**Actualizar en Mac:** cierra Pulso CG con **Cmd+Q**, abre el DMG, arrastra **Pulso CG** a **Aplicaciones** y acepta **Reemplazar**. Expulsa el DMG y abre la app desde Aplicaciones. Debe mostrar **v2.2.1** junto al logo. Abrir el DMG por sí solo no sustituye una instalación anterior. Tus perfiles y logos se conservan.
 
 Desde la versión 2.2.0: avisos y descargas de actualizaciones dentro de la app.
 Consulta [la guía de publicación y configuración de Apple](ACTUALIZACIONES.md).

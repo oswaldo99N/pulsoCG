@@ -11,6 +11,7 @@ import { motionTiming } from "./public/templates.js";
 import { ASSET_PATTERN } from "./public/sports.js";
 import { PROFILE_PRESETS } from "./public/presets.js";
 import { runSimulation } from "./src/simulation.mjs";
+import { createStateWriter } from "./src/state-stream.mjs";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const appVersion = JSON.parse(await readFile(path.join(root, "package.json"), "utf8")).version;
@@ -135,42 +136,57 @@ function snapshot() {
   return { ...publicState(state), server: { boot, port, outputs, addresses: lanAddresses(), network: networkEndpoints(os.networkInterfaces(), port), now: Date.now(), simulation: sim, activity: activity.slice(0, 8), dataDir } };
 }
 
+const writeState = createStateWriter();
+let broadcastTimer = null;
 function broadcast() {
-  const message = `event: state\ndata: ${JSON.stringify(snapshot())}\n\n`;
-  for (const client of clients.keys()) client.write(message);
+  if (broadcastTimer) return;
+  broadcastTimer = setTimeout(() => {
+    broadcastTimer = null;
+    const message = `event: state\ndata: ${JSON.stringify(snapshot())}\n\n`;
+    for (const client of clients.keys()) writeState(client, message);
+  }, 16);
+  broadcastTimer.unref();
 }
 
 // Mantiene vivas las conexiones y detecta enseguida las que se cortaron.
-setInterval(() => { for (const client of clients.keys()) client.write(": ping\n\n"); }, 15_000).unref();
+setInterval(() => { for (const client of clients.keys()) if (!client.writableNeedDrain) client.write(": ping\n\n"); }, 15_000).unref();
+
+const settleTimers = new Map(), autoOutTimers = new Map();
+function cancelTimers(id) {
+  clearTimeout(settleTimers.get(id)); settleTimers.delete(id);
+  clearTimeout(autoOutTimers.get(id)); autoOutTimers.delete(id);
+}
 
 function settle(id, itemRevision, delay, next) {
-  setTimeout(async () => {
+  settleTimers.set(id, setTimeout(async () => {
+    settleTimers.delete(id);
     const updated = applyAction(state, { type: "settle", id, itemRevision, ...next });
     if (updated !== state) {
       state = updated;
       await saveState();
       broadcast();
     }
-  }, delay);
+  }, delay));
 }
 
 // Oculta el gráfico solo tras N segundos en pantalla, salvo que el operador
 // lo haya cambiado, ocultado o eliminado entretanto (cambia su revision).
 function scheduleAutoOut(id, itemRevision, delay) {
-  setTimeout(async () => {
+  autoOutTimers.set(id, setTimeout(async () => {
+    autoOutTimers.delete(id);
     const item = state.items.find(entry => entry.id === id);
     if (!item?.onAir || item.revision !== itemRevision) return;
     await commit(applyAction(state, { type: "item_hide", id }));
-  }, delay);
+  }, delay));
 }
 
 async function commit(next, previous = state) {
   state = next;
-  await saveState();
-  broadcast();
   const before = new Map(previous.items.map(item => [item.id, item.revision]));
-  for (const item of state.items) {
+  for (const id of new Set([...settleTimers.keys(), ...autoOutTimers.keys()])) if (!next.items.some(item => item.id === id)) cancelTimers(id);
+  for (const item of next.items) {
     if (before.get(item.id) === item.revision) continue;
+    cancelTimers(item.id);
     const timing = motionTiming(item.graphic.style);
     if (item.phase === "entering" || item.phase === "updating") {
       const delay = item.phase === "entering" ? timing.enter : timing.update;
@@ -180,6 +196,8 @@ async function commit(next, previous = state) {
     }
     if (item.phase === "exiting") settle(item.id, item.revision, timing.exit + 40, { phase: "idle", onAir: false });
   }
+  await saveState();
+  broadcast();
 }
 
 async function readBody(req) {
@@ -305,7 +323,7 @@ function assetIdsOf(items) {
   // Salud del programa (para pruebas de estrés y diagnóstico).
   if (req.method === "GET" && url.pathname === "/api/health") {
     const memory = process.memoryUsage();
-    return json(res, 200, { ok: true, uptime: process.uptime(), rssMB: Math.round(memory.rss / 1e6), heapMB: Math.round(memory.heapUsed / 1e6), clients: clients.size, outputs: [...clients.values()].filter(kind => kind === "output").length, revision: state.revision, items: state.items.length });
+    return json(res, 200, { ok: true, application: "pulso-cg", version: appVersion, uptime: process.uptime(), rssMB: Math.round(memory.rss / 1e6), heapMB: Math.round(memory.heapUsed / 1e6), clients: clients.size, outputs: [...clients.values()].filter(kind => kind === "output").length, revision: state.revision, items: state.items.length });
   }
 
   if (req.method === "POST" && url.pathname === "/api/simulate") {
@@ -377,7 +395,7 @@ function assetIdsOf(items) {
     // Si se corta, el navegador reintenta a los 2 s (OBS, vMix y el panel).
     res.write("retry: 2000\n\n");
     clients.set(res, url.searchParams.has("probe") ? "probe" : url.searchParams.get("client") === "output" ? "output" : "panel");
-    res.write(`event: state\ndata: ${JSON.stringify(snapshot())}\n\n`);
+    writeState(res, `event: state\ndata: ${JSON.stringify(snapshot())}\n\n`);
     if (clients.get(res) === "output") broadcast();
     req.on("close", () => {
       const wasOutput = clients.get(res) === "output";

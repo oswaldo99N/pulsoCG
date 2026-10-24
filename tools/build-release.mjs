@@ -1,5 +1,7 @@
 import { createRequire } from 'node:module';
 import { readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 const require = createRequire(import.meta.url);
 const { build, Platform, Arch } = require('electron-builder');
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
@@ -24,3 +26,10 @@ if (process.platform === 'darwin') {
 config.extraMetadata = { updates: { macSigned } };
 const targets = process.platform === 'darwin' ? Platform.MAC.createTarget(['dmg', 'zip'], Arch.arm64, Arch.x64) : Platform.WINDOWS.createTarget(['nsis'], Arch.x64);
 await build({ targets, config, publish: 'never' });
+const archives = process.platform === 'darwin'
+  ? ['mac-arm64/Pulso CG.app/Contents/Resources/app.asar', 'mac/Pulso CG.app/Contents/Resources/app.asar']
+  : ['win-unpacked/resources/app.asar'];
+for (const archive of archives) {
+  const result = await promisify(execFile)(process.execPath, ['tools/verify-package.mjs', `${config.directories.output}/${archive}`]);
+  process.stdout.write(result.stdout);
+}
