@@ -63,3 +63,25 @@ test('actualizaciones: el estado expuesto no puede alterar el estado interno', (
   const { controller } = make(); const copy = controller.getStatus(); copy.status = 'ready';
   assert.equal(controller.getStatus().status, 'idle');
 });
+
+test('actualizaciones: conserva el aviso conocido aunque no haya Internet', async () => {
+  const { updater, controller } = make({ knownVersion: '2.3.0' });
+  assert.equal(controller.getStatus().status, 'available');
+  updater.checkForUpdates = async () => { throw Error('sin Internet'); };
+  await controller.check();
+  assert.equal(controller.getStatus().status, 'available');assert.equal(controller.getStatus().version, '2.3.0');assert.equal(updater.downloads, 0);
+});
+test('actualizaciones: no descarga durante una transmisión sin confirmar', async () => {
+  const { updater, controller } = make({ checkDownloadAllowed: async () => ({ ok: false, message: 'Al terminar la transmisión' }) });
+  await controller.check();await controller.download();
+  assert.equal(updater.downloads, 0);assert.equal(controller.getStatus().status, 'available');
+});
+test('actualizaciones: una versión recordada se verifica antes de descargar', async () => {
+  const { updater, controller } = make({ knownVersion: '2.3.0' });
+  await controller.download();assert.equal(updater.checks, 1);assert.equal(updater.downloads, 1);
+});
+test('actualizaciones: un fallo de descarga permite reintentar sin perder el aviso', async () => {
+  const { updater, controller } = make();
+  await controller.check();updater.downloadUpdate = async () => { throw Error('sin red'); };
+  await controller.download();assert.equal(controller.getStatus().status, 'available');
+});

@@ -38,8 +38,8 @@ const isVisible = item => Boolean(item?.onAir && item.phase !== "exiting");
 const isTyping = target => target?.matches?.("input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select");
 
 function loadPrefs() {
-  try { return { backdrop: "studio", guides: false, ...JSON.parse(localStorage.getItem("pulso-screen") || "{}") }; }
-  catch { return { backdrop: "studio", guides: false }; }
+  try { return { backdrop: "studio", guides: false, previewLite: true, ...JSON.parse(localStorage.getItem("pulso-screen") || "{}") }; }
+  catch { return { backdrop: "studio", guides: false, previewLite: true }; }
 }
 function savePrefs() {
   try { localStorage.setItem("pulso-screen", JSON.stringify({ ...prefs, image: String(prefs.image ?? "").startsWith("/assets/") ? prefs.image : undefined })); } catch {}
@@ -515,10 +515,11 @@ editor.addEventListener("click", async event => {
 
 // Lectura de relojes en el panel (mismo cálculo que la salida).
 setInterval(() => {
-  if (!editing) return;
+  if (!editing || document.hidden) return;
   for (const node of editor.querySelectorAll("[data-live-timer]")) {
     const { field, ms } = liveTimer(node.dataset.liveTimer);
-    node.textContent = formatClock(ms, field.format, field.direction);
+    const text = formatClock(ms, field.format, field.direction);
+    if (node.textContent !== text) node.textContent = text;
   }
 }, 100);
 
@@ -797,8 +798,13 @@ function renderState(state) {
   if (state.server?.dataDir) $("#dataPath").textContent = `Todo se guarda automáticamente en: ${state.server.dataDir}`;
   renderSimulation(state.server?.simulation);
   if (state.server?.now) serverOffset = state.server.now - Date.now();
+  const previous = currentState;
+  const libraryChanged = JSON.stringify(previous?.library) !== JSON.stringify(state.library);
+  const profilesChanged = JSON.stringify(previous?.profiles) !== JSON.stringify(state.profiles);
+  const itemsChanged = JSON.stringify(previous?.items) !== JSON.stringify(state.items);
   const presetsBefore = JSON.stringify(currentState?.presets ?? null);
   currentState = state;
+  if (itemsChanged || state.activeProfile !== previous?.activeProfile) send({ type: "pulso-state", state: { revision: state.revision, items: state.items, server: { boot: state.server?.boot, now: state.server?.now } } });
   if (selectedId && !itemById(selectedId)) { selectedId = null; editing = null; }
   if (!selectedId && state.items.length) {
     selectItem(state.items.at(-1).id);
@@ -815,9 +821,9 @@ function renderState(state) {
     const box = editor.querySelector('[data-section="presets"] .section-body');
     if (box) { box.innerHTML = presetsMarkup(); refreshIcons(); }
   }
-  renderList();
-  renderLibrary();
-  renderProfiles();
+  if (itemsChanged) renderList();
+  if (libraryChanged) renderLibrary();
+  if (profilesChanged || state.activeProfile !== previous?.activeProfile) renderProfiles();
   renderStatus();
   if (!editing) renderEditor();
 }
@@ -1049,6 +1055,9 @@ $("#profileImport").addEventListener("change", async event => {
 
 /* ── Pantalla (iframe editable) ─────────────────────────────────────── */
 function postScreenPrefs() {
+  send({ type: "pulso-preview-mode", lite: prefs.previewLite });
+  $("#previewQualityButton").setAttribute("aria-pressed", String(prefs.previewLite));
+  $("#previewQualityButton").title = prefs.previewLite ? "Vista ligera activada: pulsa para ver todos los efectos en la vista previa" : "Activar vista ligera para reducir el consumo durante la transmisión";
   send({ type: "pulso-backdrop", mode: prefs.backdrop, image: prefs.backdrop === "image" ? prefs.image : null });
   send({ type: "pulso-guides", visible: prefs.guides });
   send({ type: "pulso-select", id: selectedId });
@@ -1056,10 +1065,13 @@ function postScreenPrefs() {
   $("#guidesButton").setAttribute("aria-pressed", String(prefs.guides));
 }
 
+$("#previewQualityButton").addEventListener("click", () => { prefs.previewLite = !prefs.previewLite; savePrefs(); postScreenPrefs(); });
+
 addEventListener("message", event => {
   if (event.origin !== location.origin) return;
   const data = event.data ?? {};
   if (data.type === "pulso-frame-ready") {
+    if (currentState) send({ type: "pulso-state", state: { revision: currentState.revision, items: currentState.items, server: { boot: currentState.server?.boot, now: currentState.server?.now } } });
     postScreenPrefs();
     for (const item of currentState?.items ?? []) if (drafts.has(item.id)) send({ type: "pulso-local", id: item.id, graphic: drafts.get(item.id) });
   }

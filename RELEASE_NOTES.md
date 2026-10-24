@@ -1,16 +1,15 @@
-# Pulso CG 2.2.1
+# Pulso CG 2.2.2
 
-- Número de versión visible junto al logo y en el título de la ventana.
-- Aviso explícito si otra copia ya está abierta; evita arrancar una interfaz antigua desde un servidor de otra versión.
-- Control de conexiones lentas y temporizadores sin duplicados: verificado con 3.000 acciones y 40 salidas simultáneas.
-- Marcador horizontal de ecuavóley, logos grandes, colores visibles y guardado conjunto de cambios.
-- Un solo set actual para ambos equipos; sets ganados calculados desde los parciales válidos.
-- Enlaces de LAN y salida para OBS/vMix, 16 gráficos en el perfil nuevo de ecuavóley.
-- Panel de actualizaciones: avisos y descarga; Windows permite instalación desde la app.
-- Esta distribución Mac tiene firma local: actualización por descarga manual hasta configurar Developer ID y notarización.
+- Comprobación de actualizaciones al abrir y cada 30 minutos; aviso persistente aunque se pierda Internet.
+- Descargas únicamente al solicitarlas; confirmación si Windows detecta una salida OBS/vMix conectada.
+- Salidas ligeras: sin biblioteca, perfiles ni gráficos ocultos. La vista previa reutiliza el flujo del panel.
+- Recursos comprimidos y caché validada para reducir transferencias repetidas y mantener el código actualizado.
+- Vista previa ligera de forma predeterminada, configurable con el botón de la hoja; pausa de trabajo oculto y limpieza de animaciones.
+- Carga de fuentes bajo demanda y menos reconstrucciones del panel.
+- 53 pruebas y 12 comprobaciones de carga correctas. Ensayo con 16 gráficos y un marcador al aire: mensaje de salida 93 % más pequeño y JavaScript del panel 72 % más pequeño con gzip. No es una medición de subida de vídeo real.
 
-## Instalar o actualizar en Mac
+## Instalar en Mac
 
-Cierra la app anterior con Cmd+Q. Abre el DMG, arrastra Pulso CG a Aplicaciones y acepta Reemplazar. Expulsa el DMG y abre la copia de Aplicaciones. Comprueba v2.2.1 junto al logo. Los datos permanecen en Application Support, fuera del instalador.
+Cierra con Cmd+Q, abre el DMG de tu arquitectura, arrastra Pulso CG a Aplicaciones y acepta Reemplazar. Abre desde Aplicaciones y comprueba v2.2.2. Los perfiles y logos se conservan.
 
-Actualizar conserva los perfiles: los gráficos extra del paquete nuevo se obtienen creando otro perfil Ecuavóley · Ecuador, sin borrar el perfil personalizado.
+Esta distribución Mac usa firma local: ofrece aviso y descarga manual; la instalación automática en Mac requiere Developer ID y notarización. Windows no tiene firma comercial. Los paquetes de Windows e Intel se verificaron como archivos; no se ejecutaron en equipos nativos de esas plataformas.

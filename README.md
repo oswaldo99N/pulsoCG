@@ -6,18 +6,28 @@ Repositorio: [oswaldo99N/pulsoCG](https://github.com/oswaldo99N/pulsoCG).
 
 Abre [Releases](https://github.com/oswaldo99N/pulsoCG/releases) y descarga el instalador de tu sistema en **Assets**:
 
-- [Windows x64 — instalador EXE](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.1/Pulso-CG-2.2.1-Windows-Setup.exe)
-- [Mac Apple Silicon (M1, M2, M3 y posteriores) — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.1/Pulso-CG-2.2.1-mac-arm64.dmg)
-- [Mac Intel — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.1/Pulso-CG-2.2.1-mac-x64.dmg)
+- [Windows x64 — instalador EXE](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.2/Pulso-CG-2.2.2-Windows-Setup.exe)
+- [Mac Apple Silicon (M1, M2, M3 y posteriores) — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.2/Pulso-CG-2.2.2-mac-arm64.dmg)
+- [Mac Intel — DMG](https://github.com/oswaldo99N/pulsoCG/releases/download/v2.2.2/Pulso-CG-2.2.2-mac-x64.dmg)
 
-La descarga disponible es la **2.2.1**, con avisos de actualización. Esta distribución Mac tiene firma local: ofrece descarga manual; la instalación automática en Mac requiere la futura distribución con Developer ID y notarización. Windows puede mostrar editor desconocido.
+La descarga disponible es la **2.2.2**, con avisos de actualización. Esta distribución Mac tiene firma local: ofrece descarga manual; la instalación automática en Mac requiere la futura distribución con Developer ID y notarización. Windows puede mostrar editor desconocido.
 
-**Actualizar en Mac:** cierra Pulso CG con **Cmd+Q**, abre el DMG, arrastra **Pulso CG** a **Aplicaciones** y acepta **Reemplazar**. Expulsa el DMG y abre la app desde Aplicaciones. Debe mostrar **v2.2.1** junto al logo. Abrir el DMG por sí solo no sustituye una instalación anterior. Tus perfiles y logos se conservan.
+**Actualizar en Mac:** cierra Pulso CG con **Cmd+Q**, abre el DMG, arrastra **Pulso CG** a **Aplicaciones** y acepta **Reemplazar**. Expulsa el DMG y abre la app desde Aplicaciones. Debe mostrar **v2.2.2** junto al logo. Abrir el DMG por sí solo no sustituye una instalación anterior. Tus perfiles y logos se conservan.
 
 Desde la versión 2.2.0: avisos y descargas de actualizaciones dentro de la app.
 Consulta [la guía de publicación y configuración de Apple](ACTUALIZACIONES.md).
 
 Sistema local de grafismo televisivo para OBS Studio y vMix. Incluye diez plantillas, seis capas simultáneas, preview, TAKE, actualización al aire, OUT, cola de emisión, persistencia local y salida web transparente.
+
+## Transmisión y consumo de red
+
+La versión 2.2.2 envía a OBS/vMix únicamente los gráficos al aire. La vista previa reutiliza los datos del panel. Fuentes, logos y bibliotecas se sirven localmente; los archivos de texto se comprimen y el navegador valida su caché para recibir siempre el contenido actual.
+
+El botón de la hoja activa o desactiva la **vista ligera** (activada por defecto), con menos efectos y 20 cuadros/s en la vista previa. El acabado de la salida OBS/vMix se mantiene.
+
+Las actualizaciones se consultan al abrir y cada 30 minutos, sin descargar el instalador automáticamente. El aviso permanece visible incluso si la siguiente consulta falla. Una modificación del código se detecta al publicar una versión nueva en Releases. Windows pide confirmación adicional para descargar si hay una salida conectada.
+
+Medición de referencia (16 gráficos de ecuavóley, un marcador al aire): mensajes de salida de 16.950 a 1.115 bytes (93 % menos); JavaScript del panel de 74.766 a 20.841 bytes con gzip (72 % menos). Estos porcentajes describen ese ensayo local, no una reducción medida del tráfico de subida de una transmisión real.
 
 ## Cómo se usa (3 pasos)
 

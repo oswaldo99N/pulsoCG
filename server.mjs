@@ -1,6 +1,7 @@
 import http from "node:http";
 import { networkEndpoints } from "./public/network.js";
-import { readFile, mkdir, writeFile, rename, copyFile, access, cp, readdir } from "node:fs/promises";
+import { readFile, mkdir, writeFile, rename, copyFile, access, cp, readdir, stat } from "node:fs/promises";
+import { gzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import os from "node:os";
@@ -12,6 +13,7 @@ import { ASSET_PATTERN } from "./public/sports.js";
 import { PROFILE_PRESETS } from "./public/presets.js";
 import { runSimulation } from "./src/simulation.mjs";
 import { createStateWriter } from "./src/state-stream.mjs";
+import { outputState } from "./src/output-state.mjs";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const appVersion = JSON.parse(await readFile(path.join(root, "package.json"), "utf8")).version;
@@ -133,7 +135,7 @@ function lanAddresses() {
 function snapshot() {
   const outputs = [...clients.values()].filter(kind => kind === "output").length;
   const sim = simulation && { preset: simulation.preset, name: simulation.name, label: simulation.label, index: simulation.index, total: simulation.total };
-  return { ...publicState(state), server: { boot, port, outputs, addresses: lanAddresses(), network: networkEndpoints(os.networkInterfaces(), port), now: Date.now(), simulation: sim, activity: activity.slice(0, 8), dataDir } };
+  return { ...publicState(state), server: { boot, port, version: appVersion, outputs, addresses: lanAddresses(), network: networkEndpoints(os.networkInterfaces(), port), now: Date.now(), simulation: sim, activity: activity.slice(0, 8), dataDir } };
 }
 
 const writeState = createStateWriter();
@@ -142,8 +144,12 @@ function broadcast() {
   if (broadcastTimer) return;
   broadcastTimer = setTimeout(() => {
     broadcastTimer = null;
-    const message = `event: state\ndata: ${JSON.stringify(snapshot())}\n\n`;
-    for (const client of clients.keys()) writeState(client, message);
+    const full = snapshot();
+    const messages = new Map();
+    for (const [client, kind] of clients) {
+      if (!messages.has(kind)) messages.set(kind, `event: state\ndata: ${JSON.stringify(kind === "output" || kind === "preview" ? outputState(full, full.server, { preview: kind === "preview" }) : full)}\n\n`);
+      writeState(client, messages.get(kind));
+    }
   }, 16);
   broadcastTimer.unref();
 }
@@ -227,19 +233,29 @@ function validImageSignature(file, mime) {
   return false;
 }
 
+const staticCache = new Map();
+let staticBytes = 0;
 async function serveStatic(req, res, pathname) {
   const route = pathname === "/" ? "/index.html" : pathname === "/output" ? "/output.html" : pathname === "/test-obs" ? "/test-obs.html" : pathname;
   const requested = path.resolve(publicDir, `.${route}`);
   if (!requested.startsWith(publicDir + path.sep)) return json(res, 403, { error: "forbidden" });
   try {
-    const file = await readFile(requested);
-    res.writeHead(200, {
-      "Content-Type": mimeTypes[path.extname(requested)] || "application/octet-stream",
-      // Es una herramienta local de produccion: el panel y OBS/vMix deben ver
-      // cada ajuste de diseno inmediatamente, sin conservar CSS o JS antiguos.
-      "Cache-Control": "no-store"
-    });
-    res.end(file);
+    const meta = await stat(requested);
+    let cached = staticCache.get(requested);
+    if (!cached || cached.mtime !== meta.mtimeMs || cached.size !== meta.size) {
+      const file = await readFile(requested);
+      const compressed = /\.(js|css|html|svg)$/.test(requested) && file.length > 1024 ? gzipSync(file) : null;
+      cached = { body: file, gzip: compressed, mtime: meta.mtimeMs, size: meta.size, etag: createHash("sha256").update(file).digest("hex") };
+      if (staticBytes + file.length + (compressed?.length || 0) > 8_000_000) { staticCache.clear(); staticBytes = 0; }
+      if (file.length < 4_000_000) { staticBytes += file.length + (compressed?.length || 0); staticCache.set(requested, cached); }
+    }
+    const gzip = cached.gzip && (req.headers["accept-encoding"] || "").split(",").some(part => /^gzip(?:\s*;|$)/i.test(part.trim()) && !/;\s*q=0(?:\.0+)?\s*$/i.test(part));
+    const etag = `"${cached.etag}${gzip ? "-gzip" : ""}"`;
+    const headers = { "Content-Type": mimeTypes[path.extname(requested)] || "application/octet-stream", "Cache-Control": "no-cache", ETag: etag, Vary: "Accept-Encoding" };
+    if (req.headers["if-none-match"]?.split(/\s*,\s*/).includes(etag)) { res.writeHead(304, headers); return res.end(); }
+    if (gzip) headers["Content-Encoding"] = "gzip";
+    res.writeHead(200, headers);
+    res.end(gzip ? cached.gzip : cached.body);
   } catch {
     json(res, 404, { error: "not_found" });
   }
@@ -252,7 +268,10 @@ const server = http.createServer(async (req, res) => {
     port, interfaces: networkEndpoints(os.networkInterfaces(), port), listening: server.address(),
     clientAddress: req.socket.remoteAddress?.replace(/^::ffff:/, ""), serverAddress: req.socket.localAddress?.replace(/^::ffff:/, "")
   });
-  if (req.method === "GET" && url.pathname === "/api/state") return json(res, 200, snapshot());
+  if (req.method === "GET" && url.pathname === "/api/state") {
+    const full = snapshot(), kind = url.searchParams.get("client");
+    return json(res, 200, ["output", "preview"].includes(kind) ? outputState(full, full.server, { preview: kind === "preview" }) : full);
+  }
 
   // Cada vez que alguien abre la salida o la página de prueba queda registrado.
   if (req.method === "GET" && ["/output", "/test-obs"].includes(url.pathname) && url.searchParams.get("mode") !== "editor") {
@@ -394,8 +413,10 @@ function assetIdsOf(items) {
     });
     // Si se corta, el navegador reintenta a los 2 s (OBS, vMix y el panel).
     res.write("retry: 2000\n\n");
-    clients.set(res, url.searchParams.has("probe") ? "probe" : url.searchParams.get("client") === "output" ? "output" : "panel");
-    writeState(res, `event: state\ndata: ${JSON.stringify(snapshot())}\n\n`);
+    const kind = url.searchParams.has("probe") ? "probe" : ["output", "preview"].includes(url.searchParams.get("client")) ? url.searchParams.get("client") : "panel";
+    clients.set(res, kind);
+    const full = snapshot();
+    writeState(res, `event: state\ndata: ${JSON.stringify(["output", "preview"].includes(kind) ? outputState(full, full.server, { preview: kind === "preview" }) : full)}\n\n`);
     if (clients.get(res) === "output") broadcast();
     req.on("close", () => {
       const wasOutput = clients.get(res) === "output";

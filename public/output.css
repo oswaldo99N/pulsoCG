@@ -181,3 +181,8 @@ html.preview-mode .preview-backdrop{display:block}
 .tk-sep{width:8px;height:8px;border-radius:2px;transform:rotate(45deg);background:linear-gradient(135deg,var(--acc2),var(--acc));box-shadow:0 0 10px rgb(var(--acc-rgb)/.8)}
 
 @media(prefers-reduced-motion:reduce){.led,.skin-aurora .plate::before{animation:none}}
+
+/* La vista del operador puede reducir efectos sin cambiar el acabado de OBS. */
+.preview-lite .gfx .plate{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.preview-lite .plate::after{display:none}
+.preview-lite .led,.preview-lite .skin-aurora .plate::before,.preview-lite .nw-streak,.preview-lite .nw-stripes,.preview-lite .nw-bk-label{animation:none!important}

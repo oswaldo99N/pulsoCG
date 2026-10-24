@@ -13,6 +13,8 @@ CustomEase.create("cg.out", "0.7, 0, 0.84, 0");
 // fondo de referencia) y "editor" (pantalla del panel: arrastrar y seleccionar).
 const params = new URLSearchParams(location.search);
 const editor = params.get("mode") === "editor";
+const embeddedEditor = editor && parent !== window;
+if (embeddedEditor) { document.documentElement.classList.add("preview-lite"); gsap.ticker.fps(20); }
 const canvas = document.querySelector("#canvas");
 const backdrop = document.querySelector("#backdrop");
 const guides = document.querySelector("#safeGuides");
@@ -237,6 +239,8 @@ function unmount(id) {
   const entry = live.get(id);
   if (!entry) return;
   entry.tl?.kill(); entry.marquee?.kill(); entry.loop?.kill();
+  entry.updateTl?.kill();
+  entry.splits?.forEach(split => split.revert());
   clearInterval(entry.el._clock);
   entry.root.remove();
   live.delete(id);
@@ -284,12 +288,14 @@ const transformOf = style => `translate3d(${style.x}px, ${style.y}px, 0) scale($
 // pieza nueva se funde sobre la anterior.
 function updateLive(id, graphic, key) {
   const entry = live.get(id);
+  entry.updateTl?.progress(1).kill();
   const previous = entry.graphic;
   const lookChanged = previous.templateId !== graphic.templateId || withoutPlacement(previous.style) !== withoutPlacement(graphic.style) || graphic.style.align !== previous.style.align;
   if (lookChanged || graphic.templateId === "ticker" && previous.fields.items !== graphic.fields.items) {
     const old = entry;
     live.delete(id);
-    gsap.to(old.root, { autoAlpha: 0, duration: .35 / graphic.style.speed, onComplete: () => { old.tl?.kill(); old.marquee?.kill(); clearInterval(old.el._clock); old.root.remove(); } });
+    old.loop?.kill();
+    gsap.to(old.root, { autoAlpha: 0, duration: .35 / graphic.style.speed, onComplete: () => { old.tl?.kill(); old.marquee?.kill(); old.updateTl?.kill(); old.splits?.forEach(split => split.revert()); clearInterval(old.el._clock); old.root.remove(); } });
     mount(id, graphic, key, { instant: false });
     return;
   }
@@ -303,6 +309,7 @@ function updateLive(id, graphic, key) {
   const redecorate = () => (isSport(graphic.templateId) ? decorateSport : decorateNews)(entry.el, graphic);
   if (!changed.length) { redecorate(); return; }
   const tl = gsap.timeline({ defaults: { ease: "cg.in" } }).timeScale(graphic.style.speed);
+  entry.updateTl = tl;
   tl.to(changed, { autoAlpha: 0, y: -10, filter: "blur(6px)", duration: .22, ease: "cg.out" });
   tl.add(() => {
     for (const node of changed) {
@@ -347,15 +354,17 @@ setInterval(() => tickWallClocks(canvas), 1000);
 const timersById = new Map();
 let serverOffset = 0;
 setInterval(() => {
+  if (embeddedEditor && document.hidden) return;
   const now = Date.now() + serverOffset;
   for (const [id, entry] of live) {
     const template = TEMPLATES[entry.graphic.templateId];
-    if (template?.scorebug) paintTimers(entry.el, template, timersById.get(id), now);
+    if (template?.scorebug && Object.values(timersById.get(id) || {}).some(timer => timer.running)) paintTimers(entry.el, template, timersById.get(id), now);
   }
 }, 100);
 
 function render(state, { instant = false } = {}) {
   lastState = state;
+  if (embeddedEditor && document.hidden) return;
   if (state.server?.now) serverOffset = state.server.now - Date.now();
   timersById.clear();
   for (const item of state.items) if (item.timers) timersById.set(item.id, item.timers);
@@ -385,6 +394,10 @@ function render(state, { instant = false } = {}) {
     playOut(id, () => { container.remove(); containers.delete(id); });
     if (!live.has(id)) { container.remove(); containers.delete(id); }
   }
+  for (const [id, entry] of live) {
+    const template = TEMPLATES[entry.graphic.templateId];
+    if (template?.scorebug) paintTimers(entry.el, template, timersById.get(id), Date.now() + serverOffset);
+  }
 }
 
 function resizeCanvas() {
@@ -410,6 +423,7 @@ function setupEditor() {
 
   // La caja sigue al gráfico en cada cuadro, también durante las animaciones.
   const follow = () => {
+    if (document.hidden) return;
     const entry = selectedId && live.get(selectedId);
     if (entry && !entry.exiting) {
       const box = entry.el.getBoundingClientRect(), origin = canvas.getBoundingClientRect();
@@ -421,9 +435,8 @@ function setupEditor() {
       selection.classList.toggle("ghost", entry.ghost);
       tag.textContent = entry.ghost ? "Vista previa individual · solo lo ves tú" : "En pantalla";
     } else selection.hidden = true;
-    requestAnimationFrame(follow);
   };
-  requestAnimationFrame(follow);
+  setInterval(follow, 1000 / 15);
 
   canvas.addEventListener("pointerdown", event => {
     const handle = event.target.closest(".selection-handle");
@@ -473,15 +486,23 @@ function setupEditor() {
 
 /* ── Arranque ───────────────────────────────────────────────────────── */
 // Las métricas (líneas de SplitText, ancho del ticker) dependen de la fuente
-// real: se cargan todas antes del primer render para no medir con fallback.
+// real: se carga únicamente la fuente usada por cada gráfico antes de dibujar.
 // Máximo 3 s: si un navegador (OBS/vMix) tarda con las fuentes, igual se dibuja.
-await Promise.race([
-  Promise.all([
-    ...FONT_PRESETS.map(font => document.fonts.load(`700 40px ${font.family}`)),
-    document.fonts.load(`500 20px "JetBrains Mono Variable"`)
-  ]).catch(() => {}),
-  new Promise(resolve => setTimeout(resolve, 3000))
-]);
+const loadedFonts = new Map();
+const readyFonts = new Set();
+let fontRenderSequence = 0;
+async function renderWithFonts(state, options) {
+  if (embeddedEditor && document.hidden) { lastState = state; return; }
+  const sequence = ++fontRenderSequence;
+  const families = new Set(state.items.filter(item => item.onAir || editor && item.id === selectedId).map(item => (FONT_PRESETS.find(font => font.id === (localGraphics.get(item.id) || item.graphic).style.font) || FONT_PRESETS[0]).family));
+  if (state.items.some(item => item.onAir)) families.add('"JetBrains Mono Variable"');
+  const loads = [...families].filter(family => !readyFonts.has(family)).map(family => {
+    if (!loadedFonts.has(family)) loadedFonts.set(family, document.fonts.load(`700 40px ${family}`).catch(() => {}).then(() => readyFonts.add(family)));
+    return loadedFonts.get(family);
+  });
+  if (loads.length) { let timer; try { await Promise.race([Promise.all(loads), new Promise(resolve => { timer = setTimeout(resolve, 3000); })]); } finally { clearTimeout(timer); } }
+  if (sequence === fontRenderSequence) render(state, options);
+}
 
 if (editor) setupEditor();
 
@@ -490,33 +511,38 @@ if (editor) setupEditor();
 async function loadInitialState() {
   for (;;) {
     try {
-      const response = await fetch("/api/state", { cache: "no-store" });
+      const response = await fetch(`/api/state?client=${editor ? "preview" : "output"}`, { cache: "no-store" });
       if (response.ok) return await response.json();
     } catch {}
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
 }
+let bootId = null;
+if (!embeddedEditor) {
 const initial = await loadInitialState();
-const bootId = initial.server?.boot;
-render(initial, { instant: true });
+bootId = initial.server?.boot;
+await renderWithFonts(initial, { instant: true });
 
 if (!params.has("snapshot")) {
-  const events = new EventSource(`/events?client=${editor ? "panel" : "output"}`);
+  const events = new EventSource(`/events?client=${editor ? "preview" : "output"}`);
   events.addEventListener("state", event => {
     const state = JSON.parse(event.data);
     // El programa se reinició con otra versión: recargar para usar la nueva.
     if (bootId && state.server?.boot && state.server.boot !== bootId) { location.reload(); return; }
-    render(state);
+    renderWithFonts(state);
   });
+}
 }
 
 addEventListener("message", event => {
   if (event.origin !== location.origin) return;
   const data = event.data ?? {};
-  if (editor && data.type === "pulso-select") { selectedId = data.id; if (lastState) render(lastState); }
+  if (embeddedEditor && event.source === parent && data.type === "pulso-preview-mode") { document.documentElement.classList.toggle('preview-lite', data.lite); gsap.ticker.fps(data.lite ? 20 : 60); }
+  if (embeddedEditor && event.source === parent && data.type === "pulso-state") { renderWithFonts(data.state); }
+  if (editor && data.type === "pulso-select") { selectedId = data.id; if (lastState) renderWithFonts(lastState); }
   if (editor && data.type === "pulso-local" && data.id) {
     localGraphics.set(data.id, cleanGraphic(data.graphic));
-    if (lastState) render(lastState);
+    if (lastState) renderWithFonts(lastState);
   }
   if (editor && data.type === "pulso-ghost") { showGhost = data.visible; if (lastState) render(lastState); }
   if (editor && data.type === "pulso-replay" && data.id) {
@@ -533,3 +559,7 @@ addEventListener("message", event => {
   if (data.type === "pulso-guides") guides.hidden = !data.visible;
 });
 if (parent !== window) parent.postMessage({ type: "pulso-frame-ready" }, location.origin);
+if (embeddedEditor) document.addEventListener('visibilitychange', () => {
+  if (document.hidden) gsap.ticker.sleep();
+  else { gsap.ticker.wake(); if (lastState) renderWithFonts(lastState, { instant: true }); }
+});

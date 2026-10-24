@@ -2,9 +2,9 @@
 
 Repositorio: https://github.com/oswaldo99N/pulsoCG
 
-La versión publicada 2.2.1 añade el actualizador. Quien tenga 2.1.1 o anterior necesita
-instalar la 2.2.1 manualmente una vez. La distribución Mac actual usa firma local y ofrece aviso y descarga manual; la instalación automática en Mac se habilita al publicar una versión con Developer ID y notarización. Desde esa versión la app
-consulta GitHub Releases al abrirse y cada seis horas. También hay un botón
+La versión publicada 2.2.2 añade el actualizador. Quien tenga 2.1.1 o anterior necesita
+instalar la 2.2.2 manualmente una vez. La distribución Mac actual usa firma local y ofrece aviso y descarga manual; la instalación automática en Mac se habilita al publicar una versión con Developer ID y notarización. Desde esa versión la app
+consulta GitHub Releases al abrirse y cada 30 minutos. También hay un botón
 **Actualizaciones** y **Ayuda → Buscar actualizaciones**.
 
 La app avisa, descarga al pulsar el botón y pide confirmación para reiniciar.
@@ -55,7 +55,7 @@ descargas sigue activa.
 2. Abre https://github.com/oswaldo99N/pulsoCG/actions
 3. Elige **Publicar actualización → Run workflow → main → Run workflow**.
 4. Espera a que terminen los tests y las compilaciones de Windows y Mac.
-5. Aparecerá la nueva versión en Releases con los DMG, ZIP, EXE y metadatos. No reutilices la 2.2.1 publicada con firma local.
+5. Aparecerá la nueva versión en Releases con los DMG, ZIP, EXE y metadatos. No reutilices la 2.2.2 publicada con firma local.
 6. Instala esa versión una vez en cada computadora que deba actualizarse.
 
 GitHub publica el release solo después de subir todos los instaladores y
@@ -74,7 +74,7 @@ npm version patch
 git push origin main --follow-tags
 ```
 
-`npm version patch` sube, por ejemplo, de 2.2.1 a 2.2.2 y crea su tag. Ese tag
+`npm version patch` sube, por ejemplo, de 2.2.2 a 2.2.3 y crea su tag. Ese tag
 activa el flujo de publicación. Para cambios mayores usa `minor` o `major`.
 No reutilices un número de versión que ya se publicó.
 
